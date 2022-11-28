@@ -37,6 +37,7 @@ export default class OptionSelector extends LightningElement {
     @api includeValueInFilter = false;  // If true, the 'value' text of an option is included when determining if an option is a match for a given search text.
     @api filterActions = false; // If true, action items will be filtered along with selection items. By default, action items are always visible
     @api showSelectedCount = false; // If true, when allowMultiselect is true, the component label will show the number of selected values in parentheses
+    @api leaveEnabledDuringLoading = false; // Reserved for future use
     @api hideSelectedValues = false;    // Reserved for future use
 
     @api builderContext;
@@ -47,6 +48,7 @@ export default class OptionSelector extends LightningElement {
     @track _groupings = [];
     @track onRender = {};   // Used to manage actions on render
     @track onLoad = [];
+    @track selectedOptions = [];
     pillsNotFittingCount = 0;
     numOptionsDisplayed = LOAD_COUNT;
     pillContainerIsExpanded = false;
@@ -101,6 +103,8 @@ export default class OptionSelector extends LightningElement {
                 this._options = groupedOptions;
             }
             this.filterOptions();
+            this.determineSelectedOptions();
+            console.log('selectedOptions', JSON.stringify(this.selectedOptions));
         } else {
             this._options = [];
         }
@@ -112,6 +116,7 @@ export default class OptionSelector extends LightningElement {
     }
     set values(values) {
         this._values = setValuesFromMultipleInput(values);
+        this.determineSelectedOptions();        
         // if (!values) {
         //     this._values = [];
         // } else {
@@ -156,17 +161,17 @@ export default class OptionSelector extends LightningElement {
         this.options = groupedOptions;
     }
 
-    @api
-    get selectedOptions() {
-        let selectedOptions = [];
-        this.values.forEach(value => {
-            const option = this.options.find(option => option.value === value);
-            if (option) {
-                selectedOptions.push(option);
-            }
-        });
-        return selectedOptions;
-    }
+    // @api
+    // get selectedOptions() {
+    //     let selectedOptions = [];
+    //     this.values.forEach(value => {
+    //         const option = this.options.find(option => option.value === value);
+    //         if (option) {
+    //             selectedOptions.push(option);
+    //         }
+    //     });
+    //     return selectedOptions;
+    // }
 
     get selectedOption() {
         return this.selectedOptions.length ? this.selectedOptions[0] : null;
@@ -254,7 +259,9 @@ export default class OptionSelector extends LightningElement {
     }
 
     get isInputDisabled() {
-        return this.disabled || this.isLoading;
+        // TODO: Decide if it's worth implementing leaveEnabledDuringLoading, or if there's just no need to disable the component while loading
+        // return this.disabled || this.isLoading;
+        return this.disabled;
     }
 
     get noMatchFound() {
@@ -340,8 +347,8 @@ export default class OptionSelector extends LightningElement {
             }
             else {
                 // If the option's label matches the search text, display it. Also optionally check the option's sublabel and value.
-                if (option.label.toLowerCase().includes(searchText)
-                    || (this.includeValueInFilter && option.value.toLowerCase().includes(searchText))
+                if (option.label?.toLowerCase().includes(searchText)
+                    || (this.includeValueInFilter && option.value && option.value.toLowerCase().includes(searchText))
                     || (!this.excludeSublabelInFilter && option.sublabel && option.sublabel.toLowerCase().includes(searchText))) {
                     option.hidden = false;
                     if (option.grouping) {
@@ -359,8 +366,8 @@ export default class OptionSelector extends LightningElement {
     }
 
     selectOption(index) {
-        let selectedOption = this.options[index];
-        // console.log('selecting '+ JSON.stringify(selectedOption));
+        let selectedOption = this.options[index];            
+        console.log('selecting '+ JSON.stringify(selectedOption));
         // console.log('value before adding: '+ this.value);
         // console.log('values before adding: '+ JSON.stringify(this.values) +', length: '+ this.values.length);
         if (!selectedOption) {
@@ -368,14 +375,29 @@ export default class OptionSelector extends LightningElement {
         }
         if (selectedOption.isAction) {
             this.dispatchEvent(new CustomEvent('customaction', { detail: selectedOption.value }));
-        } else {            
-            this.values.push(selectedOption.value);
-            this.values = this.values;
-            // this.values = [...this.values, selectedOption.value];   // using spread instead of values.push to trigger the setter
+        } else {
+            if (this.allowMultiselect) {            
+                this.values.push(selectedOption.value);
+                this.values = this.values;
+                // this.values = [...this.values, selectedOption.value];   // using spread instead of values.push to trigger the setter
+            } else {
+                this.value = selectedOption.value;
+            }            
             this.resetSearch();
             this.dispatchOptions();
             this.onRender.inputFocus = true;
         }
+    }
+
+    determineSelectedOptions() {
+        let selectedOptions = [];
+        this.values.forEach(value => {
+            const option = this.options.find(option => option.value === value);
+            if (option) {
+                selectedOptions.push(option);
+            }
+        });
+        this.selectedOptions = selectedOptions;
     }
 
     unselectOption(index) {
@@ -453,7 +475,7 @@ export default class OptionSelector extends LightningElement {
 
     handleSearchBlur() {
         console.log('in handleblur');
-        if (this.inputElement.value && !this.showSelectedValue) {
+        if (this.inputElement?.value && !this.showSelectedValue) {
             console.log('looking for matchingValue for '+ this.inputElement.value)
             let matchingValue = this.options.find(option => option.value?.toLowerCase() == this.inputElement.value?.toLowerCase());
             // let matchingValue = this.options.find(option => {
@@ -505,6 +527,7 @@ export default class OptionSelector extends LightningElement {
     }
 
     handleOptionSelect(event) {
+        console.log('in handleOptionSelect');
         this.selectOption(event.currentTarget.dataset.index);
     }
 
@@ -531,7 +554,7 @@ export default class OptionSelector extends LightningElement {
     handleSelectedValueClick() {
         if (this.isBaseVariant) {
             this.openList();
-            this.highlightOption(this.selectedOption.index);
+            // this.highlightOption(this.selectedOption.index);
         }
     }
 
