@@ -1,0 +1,25 @@
+<template>
+    <lightning-card title="LWC Lookup Component Demo">
+        <div class="slds-p-around_x-small">
+            <c-fsc_object-selector onchange={handleObjectChange}></c-fsc_object-selector>
+            <!-- <c-fsc_field-selector2 label="Select Fields to Search" object-name={objectApiName}
+            onchange={handleSearchFieldsChange} allow-multiselect></c-fsc_field-selector2> -->
+            <c-fsc_field-selector2 label="Select Fields to Display" object-name={objectApiName}
+                onchange={handleDisplayFieldsChange} allow-multiselect></c-fsc_field-selector2>
+            <lightning-input type="checkbox" label="Allow Multiselect" onchange={handleAllowMultiselectChange}>
+            </lightning-input>
+            <c-fsc_pick-icon oniconselection={handleIconSelection} mode="combobox"></c-fsc_pick-icon>
+            <lightning-input label="WHERE clause" value={whereClause} onchange={handleWhereClauseChange}>
+            </lightning-input>
+            <lightning-input label="Label" value={label} onchange={handleLabelChange}></lightning-input>
+
+            <div class="slds-box">
+                <c-fsc_lookup object-name={objectApiName} label={label} allow-multiselect={allowMultiselect}
+                    icon-name={iconName} fields-to-search={fieldsToSearch} fields-to-display={fieldsToDisplay}
+                    where-clause={whereClause}>
+                </c-fsc_lookup>
+            </div>
+        </div>
+    </lightning-card>
+
+</template>
